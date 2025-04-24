@@ -131,61 +131,6 @@ const BOUNTY_TERMS_NUMERIC = {
     identity: Number(BOUNTY_TERMS.identity)
 };
 
-// New function to output JSON format for verification
-function exportJsonForVerification() {
-    // Read and parse CSV
-    const fileContent = fs.readFileSync('./active-contracts.csv', 'utf-8');
-    const records = parse(fileContent, {
-        columns: true,
-        skip_empty_lines: true
-    });
-
-    // Filter active contracts and group by chain
-    const chainGroups = records
-        .filter(record => record.Status === 'ACTIVE')
-        .reduce((groups, record) => {
-            const chain = record.Chain;
-            if (!groups[chain]) {
-                groups[chain] = [];
-            }
-            groups[chain].push(record);
-            return groups;
-        }, {});
-
-    // Create JSON output for each chain
-    Object.entries(chainGroups).forEach(([chain, contracts]) => {
-        // Ignore SOLANA for now
-        if (chain == "SOLANA") {
-            return;
-        }
-
-        const jsonOutput = {
-            agreementURI: AGREEMENT_URI,
-            bountyTerms: {
-                bountyCapUSD: BOUNTY_TERMS_NUMERIC.bountyCapUSD,
-                bountyPercentage: BOUNTY_TERMS_NUMERIC.bountyPercentage,
-                diligenceRequirements: BOUNTY_TERMS_NUMERIC.diligenceRequirements,
-                identity: BOUNTY_TERMS_NUMERIC.identity,
-                retainable: BOUNTY_TERMS_NUMERIC.retainable
-            },
-            chains: [{
-                accounts: contracts.map(contract => ({
-                    accountAddress: contract.Address,
-                    childContractScope: 0 // None in ChildContractScope enum
-                })),
-                assetRecoveryAddress: ASSET_RECOVERY_ADDRESS,
-                id: chain === "ETHEREUM" ? 1 : 0
-            }],
-            contactDetails: CONTACT_DETAILS,
-            protocolName: PROTOCOL_NAME
-        };
-
-        // Write to JSON file
-        fs.writeFileSync(`./verification-${chain.toLowerCase()}.json`, JSON.stringify(jsonOutput, null, 2));
-        console.log(`\nJSON verification file created for ${chain}: verification-${chain.toLowerCase()}.json`);
-    });
-}
 
 // Execute the function
 loadAndProcessContracts();
-// exportJsonForVerification(); 

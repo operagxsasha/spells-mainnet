@@ -4,8 +4,8 @@ import { ethers } from 'ethers';
 
 // Constants
 const OWNER_ADDRESS = "0x195a7d8610edd06e0C27c006b6970319133Cb19A";
-const AGREEMENT_ADDRESS = "0x0000000000000000000000000000000000000000"; // Replace with actual agreement address
-const RPC_URL = "https://mainnet.infura.io/v3/YOUR-API-KEY"; // Replace with your RPC URL
+const AGREEMENT_ADDRESS = "0xA3E1b36D112a5cE365546F53Fa3af3e1310d6b5A"; // Replace with actual agreement address
+const RPC_URL = "http://127.0.0.1:8545"; // Read from environment variable with fallback
 
 // ABI for AgreementV2
 const AGREEMENT_ABI = [
@@ -63,12 +63,15 @@ async function generateUpdatePayload() {
         // 4. Compare and generate updates
         const updates = [];
 
+        // Set ETHEREUM as default chain if no other chain specified
+        if (!chainGroups["ETHEREUM"] && Object.keys(chainGroups).length === 0) {
+            chainGroups["ETHEREUM"] = [];
+        }
         // Compare chains
         const currentChainIds = currentDetails.chains.map(chain => chain.id.toString());
         const desiredChainIds = Object.entries(chainGroups).map(([chain, _]) => 
             chain === "ETHEREUM" ? "1" : "0"
         );
-
         const chainDiff = findArrayDifferences(currentChainIds, desiredChainIds);
 
         // Generate chain updates
@@ -103,14 +106,19 @@ async function generateUpdatePayload() {
 
         // Compare accounts for each existing chain
         for (const [chainId, chain] of currentDetails.chains.entries()) {
-            const chainName = chain.id === 1 ? "ETHEREUM" : "OTHER";
+            console.log(chain.id);
+            const chainName = chain.id.toString() === "1" ? "ETHEREUM" : "OTHER";
             const desiredAccounts = (chainGroups[chainName] || []).map(contract => contract.Address);
             const currentAccounts = chain.accounts.map(account => account.accountAddress);
+
+            console.log("Current accounts", currentAccounts);
+            console.log("Desired accounts", desiredAccounts);
 
             const accountDiff = findArrayDifferences(currentAccounts, desiredAccounts);
 
             // Calculate the net change in number of accounts
             const netChange = accountDiff.toAdd.length - accountDiff.toRemove.length;
+
 
             if (netChange === 0) {
                 // If the number of accounts stays the same, use setAccounts
